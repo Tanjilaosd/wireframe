@@ -1,7 +1,9 @@
 import {z} from "zod"
-const envSchema = z.object({
+export const envSchema = z.object({
     NODE_ENV:z.enum(["development" , "production"]).default("development"),
-    LOG_LEVEL:z.enum(["fatal",'error','warn','info','debug','trace']).optional()
+    LOG_LEVEL:z.enum(["fatal",'error','warn','info','debug','trace']).optional(),
+    PORT:z.coerce.number().int().min(1).max(65535).default(5000),
+    MONGODB_URL:z.string().trim().min(1,{message:"mongodb uri is required"}.startsWith("mongodb",{message:"mongodb uri must start with mongodb"}))
 })
 
 const parsed = envSchema.safeParse(process.env)
