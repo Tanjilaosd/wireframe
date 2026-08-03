@@ -1,13 +1,18 @@
+console.log("MONGODB_URL =", process.env.MONGODB_URL);
+
 import cluster = require("node:cluster");
 import { Server } from "node:http";
 import mongoose from "mongoose";
+import {env} from "./src/config/env.ts"
 
-import { logger } from "./backend/src/utills/logger";
-import connectDb from "./backend/src/config/db";
+import {logger} from './src/utills/logger.ts'
+import {connectDb} from "./src/config/db.ts";
+import { app } from "./src/app";
 
 let isShuttingDown = false;
 
 const shutdown_timeout = 10_000;
+const keep_Alive_Timeout =65_000
 
 let server: Server | null = null;
 
@@ -90,8 +95,40 @@ process.once("uncaughtException", (err: Error) => {
 
 const startServer = async (): Promise<void> => {
     await connectDb();
+    server = app.listen(env.PORT,()=> {
+        logger.info({
+            port:env.PORT,
+            env:env.NODE_ENV,
+            pid:process.pid,
+            node:process.version
+        },"server started")
+        logger.info({url:`http://localhost:${env.PORT}/api/vi`})
+    })
+    server.keepAliveTimeout= keep_Alive_Timeout
+    server.headersTimeout = keep_Alive_Timeout+5_000
+    server.on(`error`,(err:NodeJS.ErrnoException)=>{
+        if(err.code === "EADDRINUSE"){
+            logger.fatal({port:env.PORT},`port ${env.PORT} is already in use`)
+        }
+        else if(err.code === 'EACCES'){
+            logger.fatal({port:env.PORT},`port ${env.PORT} requires elevated priviledges`)
+        }
+        else{
+            logger.fatal({err},'server encounterd a fatal error')
+        }
+        process.exit(1)
+    })
 
     
 };
 
-void startServer();
+
+
+
+try {
+    await startServer()
+} catch (error) {
+    logger.fatal({error},"failed to start  server")
+    process.exit(1)
+    
+}
