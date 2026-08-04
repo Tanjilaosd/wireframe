@@ -6,7 +6,7 @@ import { logger } from './../utills/logger';
 mongoose.connection.on('error',error => {
     logger.error({error},'mongodb connection error')
 })
-mongoose.connection.on("desconnected",() => {
+mongoose.connection.on("disconnected",() => {
     logger.warn("mongodb disconnected")
 })
 mongoose.connection.on("reconnected",() =>{
@@ -21,7 +21,11 @@ const connection_options:ConnectOptions = {
     socketTimeoutMS:45_000,
     heartbeatFrequencyMS:10_000,
     retryReads:true,
-    compressors:['snappy','zstd']
+    compressors:['snappy','zstd'],
+    ...(isProduction  && {
+        w: "majority",
+        readPreference:"secondaryPreferred" as const
+    })
 }
 
 

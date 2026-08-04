@@ -8,13 +8,16 @@ import {env} from "./src/config/env.ts"
 import {logger} from './src/utills/logger.ts'
 import {connectDb} from "./src/config/db.ts";
 import { app } from "./src/app";
+import { createServer } from "node:https";
 
 let isShuttingDown = false;
 
 const shutdown_timeout = 10_000;
-const keep_Alive_Timeout =65_000
+const keep_Alive_Timeout =65_000;
+const request_timeout = 30_000;
+const headers_timeout = 30_000;
 
-let server: Server | null = null;
+let server: ReturnType<typeof createServer> | null = null
 
 const shutdown = async (signal: string): Promise<void> => {
     if (isShuttingDown) return;
@@ -95,18 +98,11 @@ process.once("uncaughtException", (err: Error) => {
 
 const startServer = async (): Promise<void> => {
     await connectDb();
-    server = app.listen(env.PORT,()=> {
-        logger.info({
-            port:env.PORT,
-            env:env.NODE_ENV,
-            pid:process.pid,
-            node:process.version
-        },"server started")
-        logger.info({url:`http://localhost:${env.PORT}/api/vi`})
-    })
-    server.keepAliveTimeout= keep_Alive_Timeout
-    server.headersTimeout = keep_Alive_Timeout+5_000
-    server.on(`error`,(err:NodeJS.ErrnoException)=>{
+    const httpServer = createServer(app)
+    httpServer.keepAliveTimeout= keep_Alive_Timeout
+    httpServer.headersTimeout = keep_Alive_Timeout + 5_000
+    httpServer.requestTimeout = 30_000
+    httpServer.on(`error`,(err:NodeJS.ErrnoException)=>{
         if(err.code === "EADDRINUSE"){
             logger.fatal({port:env.PORT},`port ${env.PORT} is already in use`)
         }
