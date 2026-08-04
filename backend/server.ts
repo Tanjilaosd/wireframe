@@ -1,23 +1,18 @@
-console.log("MONGODB_URL =", process.env.MONGODB_URL);
-
-import cluster = require("node:cluster");
-import { Server } from "node:http";
 import mongoose from "mongoose";
-import {env} from "./src/config/env.ts"
+import { createServer } from "node:http";
 
-import {logger} from './src/utills/logger.ts'
-import {connectDb} from "./src/config/db.ts";
+import { env } from "./src/config/env.ts";
+import { logger } from "./src/utills/logger.ts";
+import { connectDb } from "./src/config/db.ts";
 import { app } from "./src/app";
-import { createServer } from "node:https";
 
 let isShuttingDown = false;
 
 const shutdown_timeout = 10_000;
-const keep_Alive_Timeout =65_000;
+const keep_Alive_Timeout = 65_000;
 const request_timeout = 30_000;
-const headers_timeout = 30_000;
 
-let server: ReturnType<typeof createServer> | null = null
+let server: ReturnType<typeof createServer> | null = null;
 
 const shutdown = async (signal: string): Promise<void> => {
     if (isShuttingDown) return;
@@ -98,33 +93,34 @@ process.once("uncaughtException", (err: Error) => {
 
 const startServer = async (): Promise<void> => {
     await connectDb();
-    const httpServer = createServer(app)
-    httpServer.keepAliveTimeout= keep_Alive_Timeout
-    httpServer.headersTimeout = keep_Alive_Timeout + 5_000
-    httpServer.requestTimeout = 30_000
-    httpServer.on(`error`,(err:NodeJS.ErrnoException)=>{
-        if(err.code === "EADDRINUSE"){
-            logger.fatal({port:env.PORT},`port ${env.PORT} is already in use`)
-        }
-        else if(err.code === 'EACCES'){
-            logger.fatal({port:env.PORT},`port ${env.PORT} requires elevated priviledges`)
-        }
-        else{
-            logger.fatal({err},'server encounterd a fatal error')
-        }
-        process.exit(1)
-    })
 
-    
+    const httpServer = createServer(app);
+
+    httpServer.keepAliveTimeout = keep_Alive_Timeout;
+    httpServer.headersTimeout = keep_Alive_Timeout + 5_000;
+    httpServer.requestTimeout = request_timeout;
+
+    httpServer.on("error", (err: NodeJS.ErrnoException) => {
+        if (err.code === "EADDRINUSE") {
+            logger.fatal({ port: env.PORT }, `port ${env.PORT} is already in use`);
+        } else if (err.code === "EACCES") {
+            logger.fatal({ port: env.PORT }, `port ${env.PORT} requires elevated privileges`);
+        } else {
+            logger.fatal({ err }, "server encountered a fatal error");
+        }
+        process.exit(1);
+    });
+
+    httpServer.listen(env.PORT, () => {
+        logger.info({ port: env.PORT }, "server is listening");
+    });
+
+    server = httpServer;
 };
 
-
-
-
 try {
-    await startServer()
+    await startServer();
 } catch (error) {
-    logger.fatal({error},"failed to start  server")
-    process.exit(1)
-    
+    logger.fatal({ error }, "failed to start server");
+    process.exit(1);
 }
