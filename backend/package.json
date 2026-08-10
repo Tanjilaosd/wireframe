@@ -27,6 +27,16 @@
     "pino-http": "^11.0.0",
     "zod": "^4.4.3"
   },
+  "paths": {
+      "@app": ["./src/app.ts"],
+      "@modules/*": ["./src/modules/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@config/*": ["./src/config/*"],
+      "@middlewares/*": ["./src/middlewares/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@dts/*": ["./src/types/*"],
+      "@utils/*": ["./src/utils/*"]
+    },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.2",
