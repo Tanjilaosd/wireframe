@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { da } from "zod/v4/locales";
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production"]).default("development"),
@@ -21,26 +20,24 @@ export const envSchema = z.object({
 
 const parsed = envSchema.safeParse(process.env);
 
-// if (!parsed.success) {
-//   console.error("Invalid environment variables", z.treeifyError(parsed.error));
-//   process.exit(1);
-// }
-
 if (!parsed.success) {
   console.error(parsed.error.issues);
   process.exit(1);
 }
 
-const  data = parsed.data
+const data = parsed.data;
 
+export type ParsedEnv = z.infer<typeof envSchema>;
 
-
-export type parsedEnv = z.infer<typeof envSchema>;
-export type Env = Readonly<parsedEnv & {
-  readonly isDevelopment: boolean
-}>
+export type Env = Readonly<
+  ParsedEnv & {
+    readonly isDevelopment: boolean;
+    readonly isProduction: boolean;
+  }
+>;
 
 export const env: Env = Object.freeze({
   ...data,
-  isDevelopment : data.NODE_ENV === 'development'
+  isDevelopment: data.NODE_ENV === "development",
+  isProduction: data.NODE_ENV === "production",
 });

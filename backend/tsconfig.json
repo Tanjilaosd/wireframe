@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": true,
+    "noEmitOnError": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@app": ["./src/app.ts"],
+      "@config/*": ["./src/config/*"],
+      "@utils/*": ["./src/utills/*"],
+      "@middlewares/*": ["./src/middlewares/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@dts/*": ["./src/types/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": ["server.ts", "src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
