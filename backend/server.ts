@@ -47,7 +47,54 @@ const closeHttpServer = async (): Promise<void> => {
   logger.info("http server closed");
 };
 
-c
+const shutdown = async (reason: string, exitCode = 0): Promise<void> => {
+  if (exitCode !== 0 && pendingExitCode === 0) pendingExitCode = exitCode;
+  if (isShuttingDown) {
+    if (exitCode !== 0) {
+      logger.error({ reason, exitCode }, "fatal error during shutdown");
+    }
+    return;
+  }
+  isShuttingDown = true;
+
+  logger.info({ reason, exitCode }, "shutting down gracefully");
+
+  const forceTimer = setTimeout(() => {
+    logger.error(
+      { timeOut: shutdown_timeout },
+      "graceful shutdown timed out, forcing exit",
+    );
+    server?.closeAllConnections();
+  }, shutdown_timeout);
+  forceTimer.unref();
+
+  if (exitCode === 0 && drain_delay > 0) {
+    logger.info(
+      { drainDelay: drain_delay },
+      "draining before closing listener",
+    );
+    await delay(drain_delay);
+  }
+
+  const steps: ReadonlyArray<
+    readonly [label: string, close: () => Promise<void>]
+  > = [
+    ["http server", closeHttpServer],
+    ["database connection", disconnectDb],
+  ];
+
+  let cleanupFailed = false;
+  for (const [label, close] of steps) {
+    try {
+      await close();
+    } catch (error) {
+      cleanupFailed = true;
+      logger.error({ error }, `failed to close ${label}`);
+    }
+  }
+  clearTimeout(forceTimer);
+  await exitAfterFlush(cleanupFailed ? 1 : pendingExitCode);
+};
 
 const attachProcessHandlers = (): void => {
   const onFatal =
@@ -110,6 +157,10 @@ const startServer = async (): Promise<void> => {
   httpServer.requestTimeout = request_timeout;
 
   await listen(httpServer, env.PORT);
+  httpServer.on("error",(err:NodeJS.ErrnoException)=> {
+    logger.fatal({err},'server encountered a fatal error')
+    void shutdown ('serverError')
+  })
 
   logger.info(
     {
