@@ -1,8 +1,0 @@
-{
-    "github.copilot.chat.localIndex.enabled": false,
-    "chat.useClaudeHooks": false,
-    "chat.titleBar.signIn.enabled": false,
-    "github.copilot.enable": {
-        "*": false
-    }
-}
