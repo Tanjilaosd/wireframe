@@ -1,4 +1,4 @@
-import { connectDb, disconnectDb } from "@config/db.js";
+import { connectDb,disconnectDb } from "@config/db.js";
 import { createServer, type Server } from "node:http";
 import { app } from "@app";
 import { env } from "@config/env.js";
@@ -98,8 +98,7 @@ const shutdown = async (reason: string, exitCode: number): Promise<void> => {
       if (!drainController.signal.aborted) throw err;
     } finally {
       drainController = null;
-    }
-  }
+    }}
   if (pendingExitCode !== 0) server?.closeAllConnections();
   const steps: ReadonlyArray<
     readonly [label: string, close: () => Promise<void>]
@@ -174,6 +173,7 @@ const attachProcessHandlers = (): void => {
 
 const startServer = async (): Promise<void> => {
   await connectDb();
+  if (shuttingDown) return;
   if (shuttingDown) return;
   const httpServer = createServer(
     {
